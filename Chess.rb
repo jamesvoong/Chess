@@ -1,6 +1,6 @@
-require_relative 'Chess_Unicodes'
+require_relative "Pieces.rb"
 
-class Chess
+class Board
 	@@ROWS = 8
 	@@COLUMNS = 8
 
@@ -11,31 +11,32 @@ class Chess
 
 	def create_board
 		@chess_board = []
-		8.times {@chess_board << Array.new(8, " ")}
+		8.times {@chess_board << Array.new(8, nil)}
 
-		@chess_board[0][0], @chess_board[7][0] = UNICODE_WHITE_ROOK, UNICODE_WHITE_ROOK
-		@chess_board[1][0], @chess_board[6][0] = UNICODE_WHITE_KNIGHT, UNICODE_WHITE_KNIGHT
-		@chess_board[2][0], @chess_board[5][0] = UNICODE_WHITE_BISHOP, UNICODE_WHITE_BISHOP
-		@chess_board[3][0] = UNICODE_WHITE_QUEEN
-		@chess_board[4][0] = UNICODE_WHITE_KING
-		8.times {|i| @chess_board[i][1] = UNICODE_WHITE_PAWN}
+		@chess_board[0][0], @chess_board[7][0] = Rook.new('white'), Rook.new('white')
+		@chess_board[1][0], @chess_board[6][0] = Knight.new('white'), Knight.new('white')
+		@chess_board[2][0], @chess_board[5][0] = Bishop.new('white'), Bishop.new('white')
+		@chess_board[3][0] = Queen.new('white')
+		@chess_board[4][0] = King.new('white')
+		8.times {|i| @chess_board[i][1] = Pawn.new('white')}
 
-		@chess_board[0][7], @chess_board[7][7] = UNICODE_BLACK_ROOK, UNICODE_BLACK_ROOK
-		@chess_board[1][7], @chess_board[6][7] = UNICODE_BLACK_KNIGHT, UNICODE_BLACK_KNIGHT
-		@chess_board[2][7], @chess_board[5][7] = UNICODE_BLACK_BISHOP, UNICODE_BLACK_BISHOP
-		@chess_board[3][7] = UNICODE_BLACK_QUEEN
-		@chess_board[4][7] = UNICODE_BLACK_KING
-		8.times {|i| @chess_board[i][6] = UNICODE_BLACK_PAWN}
+		@chess_board[0][7], @chess_board[7][7] = Rook.new('black'), Rook.new('black')
+		@chess_board[1][7], @chess_board[6][7] = Knight.new('black'), Knight.new('black')
+		@chess_board[2][7], @chess_board[5][7] = Bishop.new('black'), Bishop.new('black')
+		@chess_board[3][7] = Queen.new('black')
+		@chess_board[4][7] = King.new('black')
+		8.times {|i| @chess_board[i][6] = Pawn.new('black')}
 	end
 
+########## Prints out the board and 
 	def display_board
 		display_string = "   ---------------------------------\n"
 
 		@@ROWS.times do |y|
-
 			@@COLUMNS.times do |x|
-				display_string << " #{y} " if x == 0
-				display_string << "| #{@chess_board[x][y]} "
+				display_string << " #{8-y} " if x == 0
+
+				@chess_board[x][y] == nil ? display_string << "|   " : display_string << "| #{@chess_board[x][y].unicode} " 
 			end
 			display_string << "|\n   ---------------------------------\n"
 		end
@@ -43,6 +44,10 @@ class Chess
 		puts display_string.encode('utf-8')
 		puts "     1   2   3   4   5   6   7   8  "
 	end
+
+	def pick_piece(position)
+
+	end
 end
 
-ChessTestBoard = Chess.new
+ChessTestBoard = Board.new
