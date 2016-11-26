@@ -16,7 +16,6 @@ class Board
 
 
 		@chess_board[0][0], @chess_board[7][0] = Rook.new('white', [0,0]), Rook.new('white', [7,0])
-		puts @chess_board[0][0].unicode
 		@chess_board[1][0], @chess_board[6][0] = Knight.new('white', [1,0]), Knight.new('white', [6,0])
 		@chess_board[2][0], @chess_board[5][0] = Bishop.new('white', [2,0]), Bishop.new('white', [5,0])
 		@chess_board[3][0] = Queen.new('white', [3,0])
@@ -109,12 +108,17 @@ class Board
 # Used to find potential moves of a queen, bishop and rook
 	def potential_line_moves(board, position, color)
 		moves_list = []
+		opponent_color = color == 'white' ? 'black' : 'white'
+
 		board[position[0]][position[1]].movements.each do |movement|
 			new_position = position
 			loop {
 				new_position = [new_position[0]+movement[0], new_position[1]+movement[1]]
-				if !out_of_bounds?(new_position) && check_space(board, new_position) != color 
+				if !out_of_bounds?(new_position) && check_space(board, new_position) == "empty"
 					moves_list.push(new_position)
+				elsif !out_of_bounds?(new_position) && check_space(board, new_position) == opponent_color
+					moves_list.push(new_position)
+					break
 				else
 					break
 				end
@@ -230,6 +234,10 @@ class Board
 		puts "Please enter a move in the format 4,2 2,4"
 
 		until checkmate?(@chess_board, @current_turn)
+			if check?(@chess_board, @current_turn)
+				puts "Check"
+			end
+
 			invalid_move = true
 			puts "#{@current_turn.capitalize}'s turn!"
 			while invalid_move == true
@@ -253,8 +261,9 @@ class Board
 					invalid_move = false
 				end
 			end
-
+			system "clear" or system "cls"
 			@chess_board = move_piece(@chess_board, @current_turn, origin, destination)
+
 			@current_turn = @current_turn == 'white' ? 'black' : 'white'
 			display_board
 		end
