@@ -1,10 +1,12 @@
 class Piece
-	attr_accessor :unicode, :color, :movements, :opening_position
-
+    attr_reader :color, :opening_position, :movements, :unicode
+	
 	def initialize(color, position)
 		@color = color
 		@opening_position = position
 	end
+
+
 end
 
 class King < Piece
