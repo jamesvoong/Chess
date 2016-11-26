@@ -3,6 +3,7 @@ require_relative "Pieces.rb"
 class Board
 	@@ROWS = 8
 	@@COLUMNS = 8
+	@@PROMOTION_CHOICES = ["rook", "knight", "bishop", "queen"]
 
 	def initialize
 		create_board
@@ -230,6 +231,36 @@ class Board
 		checked ? true : false
 	end
 
+# Checks if promotion is neccessary given the position to check and returns true if promotion was done, false otherwise
+	def promotion(board, destination)
+		# Promotion if a pawn a end of the board
+		if destination[1] == 7 || destination[1] == 0 
+			puts "Please choose a piece to replace your pawn:"
+			promotion_choice = gets.chomp
+			while !@@PROMOTION_CHOICES.include?(promotion_choice.downcase)
+				puts "Invalid choice. Please enter the piece you would like to promote you pawn to."
+				promotion_choice = gets.chomp
+			end
+
+			case promotion_choice.downcase
+			when "queen"
+				board[destination[0]][destination[1]] = Queen.new(board[destination[0]][destination[1]].color)
+			when "knight"
+				board[destination[0]][destination[1]] = Knight.new(board[destination[0]][destination[1]].color)
+			when "rook"
+				board[destination[0]][destination[1]] = Rook.new(board[destination[0]][destination[1]].color)
+			when "bishop"
+				board[destination[0]][destination[1]] = Bishop.new(board[destination[0]][destination[1]].color)
+			else
+				puts "Error in promotion function"
+			end
+
+			return true
+		else
+			return false
+		end	
+	end
+
 	def play		
 		puts "Please enter a move in the format 4,2 2,4"
 
@@ -261,12 +292,17 @@ class Board
 					invalid_move = false
 				end
 			end
-			system "clear" or system "cls"
+			
 			@chess_board = move_piece(@chess_board, @current_turn, origin, destination)
 
+			promotion(@chess_board, destination) if destination[1] == 7 || destination[1] == 0 
+
 			@current_turn = @current_turn == 'white' ? 'black' : 'white'
+			system "clear" or system "cls"
 			display_board
 		end
+		winning_player = @current_turn == 'white' ? 'black' : 'white'
+		puts "Checkmate! #{winning_player.capitalize} wins!"
 	end
 end
 

@@ -1,7 +1,7 @@
 class Piece
     attr_reader :color, :opening_position, :movements, :unicode
 	
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		@color = color
 		@opening_position = position
 	end
@@ -10,7 +10,7 @@ class Piece
 end
 
 class King < Piece
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		super(color, position)
 		@unicode = color == 'white' ? "\u2654" : "\u265A"
 		@movements = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1]]
@@ -18,7 +18,7 @@ class King < Piece
 end
 
 class Queen < Piece
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		super(color, position)
 		@unicode = color == 'white' ? "\u2655" : "\u265B"
 		@movements = [[1,1], [1,-1], [-1,1], [-1,-1], [1,0], [-1,0], [0,1], [0,-1]]
@@ -26,7 +26,7 @@ class Queen < Piece
 end
 
 class Rook < Piece
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		super(color, position)
 		@unicode = color == 'white' ? "\u2656" : "\u265C"
 		@movements = [[1,0], [-1,0], [0,1], [0,-1]]
@@ -34,7 +34,7 @@ class Rook < Piece
 end
 
 class Bishop < Piece
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		super(color, position)
 		@unicode = color == 'white' ? "\u2657" : "\u265D"
 		@movements = [[1,1], [1,-1], [-1,1], [-1,-1]]
@@ -42,7 +42,7 @@ class Bishop < Piece
 end
 
 class Knight < Piece
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		super(color, position)
 		@unicode = color == 'white' ? "\u2658" : "\u265E"
 		@movements = [[1,2], [1,-2], [-1,2], [-1,-2], [2,1], [2,-1], [-2,1], [-2,-1]]
@@ -50,7 +50,7 @@ class Knight < Piece
 end
 
 class Pawn < Piece
-	def initialize(color, position)
+	def initialize(color, position=nil)
 		super(color, position)
 		@unicode = color == 'white' ? "\u2659" : "\u265F"
 	end	
