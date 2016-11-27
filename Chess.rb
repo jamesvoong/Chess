@@ -5,6 +5,17 @@ class Board
 	@@COLUMNS = 8
 	@@PROMOTION_CHOICES = ["rook", "knight", "bishop", "queen"]
 
+	@@LETTER_MAPPING = {
+		"A" => 7,
+		"B" => 6,
+		"C" => 5,
+		"D" => 4,
+		"E" => 3,
+		"F" => 2,
+		"G" => 1,
+		"H" => 0
+  	}
+
 	def initialize
 		create_board
 		display_board
@@ -16,33 +27,33 @@ class Board
 		@chess_board = Array.new(8) {Array.new()}
 
 
-		@chess_board[0][0], @chess_board[7][0] = Rook.new('white', [0,0]), Rook.new('white', [7,0])
-		@chess_board[1][0], @chess_board[6][0] = Knight.new('white', [1,0]), Knight.new('white', [6,0])
-		@chess_board[2][0], @chess_board[5][0] = Bishop.new('white', [2,0]), Bishop.new('white', [5,0])
-		@chess_board[3][0] = Queen.new('white', [3,0])
-		@chess_board[4][0] = King.new('white', [4,0])
-		8.times {|i| @chess_board[i][1] = Pawn.new('white', [i,1])}
+		@chess_board[0][0], @chess_board[7][0] = Rook.new('white'), Rook.new('white')
+		@chess_board[1][0], @chess_board[6][0] = Knight.new('white'), Knight.new('white')
+		@chess_board[2][0], @chess_board[5][0] = Bishop.new('white'), Bishop.new('white')
+		@chess_board[3][0] = Queen.new('white')
+		@chess_board[4][0] = King.new('white')
+		8.times {|i| @chess_board[i][1] = Pawn.new('white')}
 
-		@chess_board[0][7], @chess_board[7][7] = Rook.new('black', [0,7]), Rook.new('black', [7,7])
-		@chess_board[1][7], @chess_board[6][7] = Knight.new('black', [1,7]), Knight.new('black', [6,7])
-		@chess_board[2][7], @chess_board[5][7] = Bishop.new('black', [2,7]), Bishop.new('black', [5,7])
-		@chess_board[3][7] = Queen.new('black', [3,7])
-		@chess_board[4][7] = King.new('black', [4,7])
-		8.times {|i| @chess_board[i][6] = Pawn.new('black', [i,6])}
+		@chess_board[0][7], @chess_board[7][7] = Rook.new('black'), Rook.new('black')
+		@chess_board[1][7], @chess_board[6][7] = Knight.new('black'), Knight.new('black')
+		@chess_board[2][7], @chess_board[5][7] = Bishop.new('black'), Bishop.new('black')
+		@chess_board[3][7] = Queen.new('black')
+		@chess_board[4][7] = King.new('black')
+		8.times {|i| @chess_board[i][6] = Pawn.new('black')}
 
 	end
 
 # Prints out the board and coordinates
 	def display_board
+		puts "     1   2   3   4   5   6   7   8  "
 		display_string = "   ---------------------------------\n"
 
 		@@ROWS.times do |y|
 			@@COLUMNS.times do |x|
-				
-				display_string << " #{8-y} " if x == 0
+				display_string << " #{@@LETTER_MAPPING.key(7-y)} " if x == 0
 				@chess_board[x][7-y] == nil ? display_string << "|   " : display_string << "| #{@chess_board[x][7-y].unicode} " 
 			end
-			display_string << "|\n   ---------------------------------\n"
+			display_string << "| #{@@LETTER_MAPPING.key(7-y)}\n   ---------------------------------\n"
 		end
 
 		puts display_string.encode('utf-8')
@@ -106,7 +117,7 @@ class Board
 		return moves_list
 	end
 
-# Used to find potential moves of a queen, bishop and rook
+# Used to find potential moves of pieces that move in straight lines (queen, bishop and rook)
 	def potential_line_moves(board, position, color)
 		moves_list = []
 		opponent_color = color == 'white' ? 'black' : 'white'
@@ -147,7 +158,7 @@ class Board
 		moves_list << new_position if check_space(board, new_position) == "empty"
 
 		# Check two spaces in front of pawn if it has not moved
-		if board[position[0]][position[1]].opening_position == position
+		if board[position[0]][position[1]].moved == false
 			new_position = [position[0], position[1] + direction + direction]
 			moves_list << new_position if check_space(board, new_position) == "empty"
 		end
@@ -189,6 +200,10 @@ class Board
 	def checkmate?(board, color)		
 		opponent_color = color == 'white' ? 'black' : 'white'
 
+		# If the player is not in check, they cannot be in checkmate
+		return false if check?(board, color) == false
+
+		# Check all possible moves for color and return false if there is a move that allows them to leave a checked state
 		@@ROWS.times do |x|
 			@@COLUMNS.times do |y|
 				moves_for_review = nil				
@@ -213,7 +228,9 @@ class Board
 		if potential_moves(board, [origin[0], origin[1]], color).include?(destination)
 			board[destination[0]][destination[1]] = board[origin[0]][origin[1]]
 			board[origin[0]][origin[1]] = nil
+			board[destination[0]][destination[1]].moved = true if board[destination[0]][destination[1]].moved == false
 		end
+
 		return board
 	end	
 
@@ -222,47 +239,53 @@ class Board
 		#Temporarily alter the board to check for check
 		origin_content = board[origin[0]][origin[1]]
 		destination_content = board[destination[0]][destination[1]]
+
+		origin_has_moved = board[origin[0]][origin[1]].moved if origin_content != nil
+		destination_has_moved = board[destination[0]][destination[1]].moved if destination_content != nil
+		
 		move_piece(board, color, origin, destination)
 		checked = check?(board, color)
 
 		#restore the board to previous state
 		board[origin[0]][origin[1]] = origin_content
 		board[destination[0]][destination[1]] = destination_content
+
+		board[origin[0]][origin[1]].moved = origin_has_moved if origin_content != nil
+		board[destination[0]][destination[1]] = destination_has_moved if destination_content != nil
 		checked ? true : false
 	end
 
-# Checks if promotion is neccessary given the position to check and returns true if promotion was done, false otherwise
+# Function that promotes a pawn based on the users choice
 	def promotion(board, destination)
-		# Promotion if a pawn a end of the board
-		if destination[1] == 7 || destination[1] == 0 
-			puts "Please choose a piece to replace your pawn:"
+		puts "Please choose a piece to replace your pawn:"
+		promotion_choice = gets.chomp
+		while !@@PROMOTION_CHOICES.include?(promotion_choice.downcase)
+			puts "Invalid choice. Please enter the piece you would like to promote your pawn to."
 			promotion_choice = gets.chomp
-			while !@@PROMOTION_CHOICES.include?(promotion_choice.downcase)
-				puts "Invalid choice. Please enter the piece you would like to promote you pawn to."
-				promotion_choice = gets.chomp
-			end
-
-			case promotion_choice.downcase
-			when "queen"
-				board[destination[0]][destination[1]] = Queen.new(board[destination[0]][destination[1]].color)
-			when "knight"
-				board[destination[0]][destination[1]] = Knight.new(board[destination[0]][destination[1]].color)
-			when "rook"
-				board[destination[0]][destination[1]] = Rook.new(board[destination[0]][destination[1]].color)
-			when "bishop"
-				board[destination[0]][destination[1]] = Bishop.new(board[destination[0]][destination[1]].color)
-			else
-				puts "Error in promotion function"
-			end
-
-			return true
+		end
+		case promotion_choice.downcase
+		when "queen"
+			board[destination[0]][destination[1]] = Queen.new(board[destination[0]][destination[1]].color)
+		when "knight"
+			board[destination[0]][destination[1]] = Knight.new(board[destination[0]][destination[1]].color)
+		when "rook"
+			board[destination[0]][destination[1]] = Rook.new(board[destination[0]][destination[1]].color)
+		when "bishop"
+			board[destination[0]][destination[1]] = Bishop.new(board[destination[0]][destination[1]].color)
 		else
-			return false
-		end	
+			puts "Error in promotion function"
+		end
 	end
 
+	def en_passant
+	end
+
+	def castling
+	end
+
+# Function to play the game, ends when checkmate
 	def play		
-		puts "Please enter a move in the format 4,2 2,4"
+		puts "Please enter a move in the format G1 E1"
 
 		until checkmate?(@chess_board, @current_turn)
 			if check?(@chess_board, @current_turn)
@@ -273,15 +296,16 @@ class Board
 			puts "#{@current_turn.capitalize}'s turn!"
 			while invalid_move == true
 				input = gets.chomp.to_s
-				origin = [(input[0].to_i)-1, (input[2].to_i)-1]
-				destination = [(input[4].to_i)-1, (input[6].to_i)-1]
+				origin = [(input[1].to_i)-1, @@LETTER_MAPPING[input[0]]]
+				puts origin
+				destination = [(input[4].to_i)-1, @@LETTER_MAPPING[input[3]]]
 
 				if valid_piece(origin, @current_turn) == false
-					puts "You do not have a piece at #{origin[0]+1},#{origin[1]+1}"
+					puts "You do not have a piece at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1}"
 					puts "Please enter a valid move:"
 					invalid_move = true
 				elsif !potential_moves(@chess_board, [origin[0], origin[1]], @chess_board[origin[0]][origin[1]].color).include?(destination)
-					puts "The #{@chess_board[origin[0]][origin[1]].class} at #{origin[0]+1},#{origin[1]+1} cannot be moved to #{destination[0]+1},#{destination[1]+1}"
+					puts "The #{@chess_board[origin[0]][origin[1]].class} at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1} cannot be moved to #{@@LETTER_MAPPING.key(destination[1])},#{destination[0]+1}"
 					puts "Please enter a valid move:"
 					invalid_move = true
 				elsif color_checked_after_move?(@chess_board, @current_turn, origin, destination)
@@ -295,7 +319,10 @@ class Board
 			
 			@chess_board = move_piece(@chess_board, @current_turn, origin, destination)
 
-			promotion(@chess_board, destination) if destination[1] == 7 || destination[1] == 0 
+
+			if @chess_board[destination[0]][destination[1]].class.to_s == "Pawn" && (destination[1] == 7 || destination[1] == 0)
+				promotion(@chess_board, destination)
+			end
 
 			@current_turn = @current_turn == 'white' ? 'black' : 'white'
 			system "clear" or system "cls"
