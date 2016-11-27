@@ -292,7 +292,43 @@ class Board
 		end
 	end
 
-	def en_passant
+	# Function that receives a board state and returns true if an en passant move can be made
+	def can_en_passant(board, color, last_move)
+		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
+		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]
+
+		if color == 'white'
+			# If last move was a two step move by an opposing pawn
+			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 6 && prev_destination[1] == 4
+				#If the user has a pawn in position to do en passant, checks both sides
+				if board[prev_destination[0]-1][prev_destination[1]] != nil 
+					return true if board[prev_destination[0]-1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]-1][prev_destination[1]].color == color
+				elsif board[prev_destination[0]+1][prev_destination[1]] != nil 
+					return true if board[prev_destination[0]+1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]+1][prev_destination[1]].color == color
+				else
+					return false
+				end
+			end
+		else
+			# If last move was a two step move by an opposing pawn
+			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 1 && prev_destination[1] == 3
+				#If the user has a pawn in position to do en passant, checks both sides
+				if board[prev_destination[0]-1][prev_destination[1]] != nil
+					return true if board[prev_destination[0]-1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]-1][prev_destination[1]].color == color
+				elsif board[prev_destination[0]+1][prev_destination[1]] != nil
+					return true if board[prev_destination[0]+1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]+1][prev_destination[1]].color == color
+				else
+					return false
+				end
+			end		
+		end
+
+		return false
+	end
+
+	# Function to perform an en passant move to the chess board
+	def en_passant(board, color, last_move)
+
 	end
 
 	# Function that checks a castling move is available for the argument color and direction 
@@ -379,7 +415,7 @@ class Board
 
 # Function to play the game, ends when checkmate
 	def play		
-		puts "Please enter a move in the format G1 E1"
+		puts "Please type a move in the format G1 E1, 'castle' to castle and 'en passant' to perform en passant"
 
 		until checkmate?(@chess_board, @current_turn)
 			puts "Check" if check?(@chess_board, @current_turn)
@@ -392,25 +428,32 @@ class Board
 				if input == "castle" 
 					puts "Please enter a direction to castle (left or right):"
 					direction = gets.chomp until direction == 'left' || direction == 'right'
-					if can_castle?
-						castle
+					if can_castle?(@chess_board, @current_turn, direction)
+						castle(@chess_board, @current_turn, direction)
+						@last_move = "castle"
 					else
 						puts "Cannot castle to the #{direction}."
 						puts "Please enter a valid move:"
 						invalid_move = true
 					end
 				elsif input == "en passant"
-
+					if can_en_passant?
+						en_passant
+						@last_move = "en passant"
+					else
+						puts "Please enter a valid move:"
+						invalid_move = true
+					end
 				else
 					origin = [(input[1].to_i)-1, @@LETTER_MAPPING[input[0]]]
 					destination = [(input[4].to_i)-1, @@LETTER_MAPPING[input[3]]]
 
 					if valid_piece(origin, @current_turn) == false
-						puts "You do not have a piece at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1}"
+						puts "You do not have a piece at #{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1}"
 						puts "Please enter a valid move:"
 						invalid_move = true
 					elsif !potential_moves(@chess_board, [origin[0], origin[1]], @chess_board[origin[0]][origin[1]].color).include?(destination)
-						puts "The #{@chess_board[origin[0]][origin[1]].class} at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1} cannot be moved to #{@@LETTER_MAPPING.key(destination[1])},#{destination[0]+1}"
+						puts "The #{@chess_board[origin[0]][origin[1]].class} at #{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1} cannot be moved to #{@@LETTER_MAPPING.key(destination[1])}#{destination[0]+1}"
 						puts "Please enter a valid move:"
 						invalid_move = true
 					elsif color_checked_after_move?(@chess_board, @current_turn, origin, destination)
@@ -424,7 +467,7 @@ class Board
 			end
 			
 			@chess_board = move_piece(@chess_board, @current_turn, origin, destination)
-
+			@last_move = "#{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1} #{@@LETTER_MAPPING.key(destination[1])}#{destination[0]+1}"
 
 			if @chess_board[destination[0]][destination[1]].class.to_s == "Pawn" && (destination[1] == 7 || destination[1] == 0)
 				promotion(@chess_board, destination)
@@ -433,6 +476,7 @@ class Board
 			@current_turn = @current_turn == 'white' ? 'black' : 'white'
 			system "clear" or system "cls"
 			display_board
+			puts "Last move was: #{@last_move}"
 		end
 		winning_player = @current_turn == 'white' ? 'black' : 'white'
 		puts "Checkmate! #{winning_player.capitalize} wins!"
