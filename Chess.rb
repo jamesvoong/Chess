@@ -235,24 +235,39 @@ class Board
 	end	
 
 # Function that simulates a move and checks if it causes the player to be checked
-	def color_checked_after_move?(board, color, origin, destination)
-		#Temporarily alter the board to check for check
-		origin_content = board[origin[0]][origin[1]]
-		destination_content = board[destination[0]][destination[1]]
+	def color_checked_after_move?(board, color, origin, destination, special_move=nil)
+		case special_move
+		when 'castle right'
+			castle(board, color, 'right')
+			checked = check?(board, color)
+			uncastle(board, color, 'right')
+			return checked
+		when 'castle left'
+			castle(board, color, 'left')
+			checked = check?(board, color)
+			uncastle(board, color, 'left')
+			return checked			
+		when 'en passant'
+			return false
+		else
+			#Temporarily alter the board to check for check
+			origin_content = board[origin[0]][origin[1]]
+			destination_content = board[destination[0]][destination[1]]
 
-		origin_has_moved = board[origin[0]][origin[1]].moved if origin_content != nil
-		destination_has_moved = board[destination[0]][destination[1]].moved if destination_content != nil
-		
-		move_piece(board, color, origin, destination)
-		checked = check?(board, color)
+			origin_has_moved = board[origin[0]][origin[1]].moved if origin_content != nil
+			destination_has_moved = board[destination[0]][destination[1]].moved if destination_content != nil
+			
+			move_piece(board, color, origin, destination)
+			checked = check?(board, color)
 
-		#restore the board to previous state
-		board[origin[0]][origin[1]] = origin_content
-		board[destination[0]][destination[1]] = destination_content
+			#restore the board to previous state
+			board[origin[0]][origin[1]] = origin_content
+			board[destination[0]][destination[1]] = destination_content
 
-		board[origin[0]][origin[1]].moved = origin_has_moved if origin_content != nil
-		board[destination[0]][destination[1]] = destination_has_moved if destination_content != nil
-		checked ? true : false
+			board[origin[0]][origin[1]].moved = origin_has_moved if origin_content != nil
+			board[destination[0]][destination[1]] = destination_has_moved if destination_content != nil
+			checked ? true : false
+		end
 	end
 
 # Function that promotes a pawn based on the users choice
@@ -280,7 +295,86 @@ class Board
 	def en_passant
 	end
 
-	def castling
+	# Function that checks a castling move is available for the argument color and direction 
+	def can_castle?(board, color, direction)
+		return false if check?(board, color)
+
+		if color == 'white'
+			return false if board[4][0].moved == true
+
+			if direction == 'left'
+				return false if board[0][0].moved == true
+				return false if check_space(board, board[1][0]) != "empty" || check_space(board, board[2][0]) != "empty" || check_space(board, board[3][0]) != "empty"
+				return false if color_checked_after_move(board, color, nil, nil, 'castle left')
+			else
+				return false if board[7][0].moved == true
+				return false if check_space(board, board[5][0]) != "empty" || check_space(board, board[6][0]) != "empty"
+				return false if color_checked_after_move(board, color, nil, nil, 'castle right')
+			end
+		else
+			return false if board[4][7].moved == true
+
+			if direction == 'left'
+				return false if board[0][7].moved == true
+				return false if check_space(board, board[1][7]) != "empty" || check_space(board, board[2][7]) != "empty" || check_space(board, board[3][7]) != "empty"
+				return false if color_checked_after_move(board, color, nil, nil, 'castle left')
+			else
+				return false if board[7][7].moved == true
+				return false if check_space(board, board[5][7]) != "empty" || check_space(board, board[6][7]) != "empty"
+				return false if color_checked_after_move(board, color, nil, nil, 'castle right')
+			end
+		end
+		castle(board, color, direction)
+	end
+
+	# Function that performs a castle movement
+	def castle(board, color, direction)
+		if color == 'white'
+			if direction == 'left'
+				move_piece(board, color, [4,0], [2,0])
+				move_piece(board, color, [0,0], [3,0])
+			else
+				move_piece(board, color, [4,0], [6,0])
+				move_piece(board, color, [7,0], [5,0])	
+			end
+		else
+			if direction == 'left'
+				move_piece(board, color, [4,7], [2,7])
+				move_piece(board, color, [0,7], [3,7])
+			else
+				move_piece(board, color, [4,7], [6,7])
+				move_piece(board, color, [7,7], [5,7])	
+			end
+		end
+	end
+
+	# Function that undoes a castle movement
+	def uncastle(board, color, direction)
+		if color == 'white'
+			if direction == 'left'
+				move_piece(board, color, [2,0], [4,0])
+				move_piece(board, color, [3,0], [0,0])
+				board[4][0].moved = false
+				board[0][0].moved = false
+			else
+				move_piece(board, color, [6,0], [4,0])
+				move_piece(board, color, [5,0], [7,0])	
+				board[4][0].moved = false
+				board[7][0].moved = false
+			end
+		else
+			if direction == 'left'
+				move_piece(board, color, [2,7], [4,7])
+				move_piece(board, color, [3,7], [0,7])
+				board[4][7].moved = false
+				board[0][7].moved = false
+			else
+				move_piece(board, color, [6,7], [4,7])
+				move_piece(board, color, [5,7], [7,7])	
+				board[4][7].moved = false
+				board[7][7].moved = false
+			end
+		end
 	end
 
 # Function to play the game, ends when checkmate
@@ -288,32 +382,44 @@ class Board
 		puts "Please enter a move in the format G1 E1"
 
 		until checkmate?(@chess_board, @current_turn)
-			if check?(@chess_board, @current_turn)
-				puts "Check"
-			end
-
+			puts "Check" if check?(@chess_board, @current_turn)
+				
 			invalid_move = true
 			puts "#{@current_turn.capitalize}'s turn!"
 			while invalid_move == true
 				input = gets.chomp.to_s
-				origin = [(input[1].to_i)-1, @@LETTER_MAPPING[input[0]]]
-				puts origin
-				destination = [(input[4].to_i)-1, @@LETTER_MAPPING[input[3]]]
 
-				if valid_piece(origin, @current_turn) == false
-					puts "You do not have a piece at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1}"
-					puts "Please enter a valid move:"
-					invalid_move = true
-				elsif !potential_moves(@chess_board, [origin[0], origin[1]], @chess_board[origin[0]][origin[1]].color).include?(destination)
-					puts "The #{@chess_board[origin[0]][origin[1]].class} at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1} cannot be moved to #{@@LETTER_MAPPING.key(destination[1])},#{destination[0]+1}"
-					puts "Please enter a valid move:"
-					invalid_move = true
-				elsif color_checked_after_move?(@chess_board, @current_turn, origin, destination)
-					puts "This move will leave your king vulnerable."
-					puts "Please enter a valid move:"
-					invalid_move = true
+				if input == "castle" 
+					puts "Please enter a direction to castle (left or right):"
+					direction = gets.chomp until direction == 'left' || direction == 'right'
+					if can_castle?
+						castle
+					else
+						puts "Cannot castle to the #{direction}."
+						puts "Please enter a valid move:"
+						invalid_move = true
+					end
+				elsif input == "en passant"
+
 				else
-					invalid_move = false
+					origin = [(input[1].to_i)-1, @@LETTER_MAPPING[input[0]]]
+					destination = [(input[4].to_i)-1, @@LETTER_MAPPING[input[3]]]
+
+					if valid_piece(origin, @current_turn) == false
+						puts "You do not have a piece at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1}"
+						puts "Please enter a valid move:"
+						invalid_move = true
+					elsif !potential_moves(@chess_board, [origin[0], origin[1]], @chess_board[origin[0]][origin[1]].color).include?(destination)
+						puts "The #{@chess_board[origin[0]][origin[1]].class} at #{@@LETTER_MAPPING.key(origin[1])},#{origin[0]+1} cannot be moved to #{@@LETTER_MAPPING.key(destination[1])},#{destination[0]+1}"
+						puts "Please enter a valid move:"
+						invalid_move = true
+					elsif color_checked_after_move?(@chess_board, @current_turn, origin, destination)
+						puts "This move will leave your king vulnerable."
+						puts "Please enter a valid move:"
+						invalid_move = true
+					else
+						invalid_move = false
+					end
 				end
 			end
 			
