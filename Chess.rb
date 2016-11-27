@@ -223,15 +223,10 @@ class Board
 		return true
 	end
 
-# Moves a piece 
 	def move_piece(board, color, origin, destination)
-		if potential_moves(board, [origin[0], origin[1]], color).include?(destination)
-			board[destination[0]][destination[1]] = board[origin[0]][origin[1]]
-			board[origin[0]][origin[1]] = nil
-			board[destination[0]][destination[1]].moved = true if board[destination[0]][destination[1]].moved == false
-		end
-
-		return board
+		board[destination[0]][destination[1]] = board[origin[0]][origin[1]]
+		board[origin[0]][origin[1]] = nil
+		board[destination[0]][destination[1]].moved = true if board[destination[0]][destination[1]].moved == false
 	end	
 
 # Function that simulates a move and checks if it causes the player to be checked
@@ -293,7 +288,7 @@ class Board
 	end
 
 	# Function that receives a board state and returns true if an en passant move can be made
-	def can_en_passant(board, color, last_move)
+	def can_en_passant?(board, color, last_move)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]
 
@@ -301,25 +296,15 @@ class Board
 			# If last move was a two step move by an opposing pawn
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 6 && prev_destination[1] == 4
 				#If the user has a pawn in position to do en passant, checks both sides
-				if board[prev_destination[0]-1][prev_destination[1]] != nil 
-					return true if board[prev_destination[0]-1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]-1][prev_destination[1]].color == color
-				elsif board[prev_destination[0]+1][prev_destination[1]] != nil 
-					return true if board[prev_destination[0]+1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]+1][prev_destination[1]].color == color
-				else
-					return false
-				end
+				return true if board[prev_destination[0]-1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]-1][prev_destination[1]].color == color
+				return true if board[prev_destination[0]+1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+1][prev_destination[1]].color == color
 			end
 		else
 			# If last move was a two step move by an opposing pawn
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 1 && prev_destination[1] == 3
 				#If the user has a pawn in position to do en passant, checks both sides
-				if board[prev_destination[0]-1][prev_destination[1]] != nil
-					return true if board[prev_destination[0]-1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]-1][prev_destination[1]].color == color
-				elsif board[prev_destination[0]+1][prev_destination[1]] != nil
-					return true if board[prev_destination[0]+1][prev_destination[1]].is_a?("Pawn") && board[prev_destination[0]+1][prev_destination[1]].color == color
-				else
-					return false
-				end
+				return true if board[prev_destination[0]-1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]-1][prev_destination[1]].color == color
+				return true if board[prev_destination[0]+1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+1][prev_destination[1]].color == color
 			end		
 		end
 
@@ -328,7 +313,28 @@ class Board
 
 	# Function to perform an en passant move to the chess board
 	def en_passant(board, color, last_move)
+		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
+		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]	
 
+		left_pawn = true if board[prev_destination[0]-1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]-1][prev_destination[1]].color == color
+		right_pawn = true if board[prev_destination[0]+1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+1][prev_destination[1]].color == color
+		choice = nil
+		direction = color == 'white' ? 1 : -1
+
+		if left_pawn && right_pawn
+			puts "Please type 'left' or 'right' to perform en_passant with the Pawn to the left or right of the opposing piece:"
+			choice = gets.chomp
+			until choice == 'left' || choice == 'right'
+				puts "Please enter a valid choice:"
+				choice = gets.chomp
+			end
+		elsif (left_pawn && !right_pawn) || choice == 'left'
+			move_piece(board, color, [prev_destination[0]-1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction]) 
+			board[prev_destination[0]][prev_destination[1]] = nil
+		elsif (!left_pawn && right_pawn) || choice == 'right'
+			move_piece(board, color, [prev_destination[0]+1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction]) 
+			board[prev_destination[0]][prev_destination[1]] = nil
+		end
 	end
 
 	# Function that checks a castling move is available for the argument color and direction 
@@ -340,27 +346,27 @@ class Board
 
 			if direction == 'left'
 				return false if board[0][0].moved == true
-				return false if check_space(board, board[1][0]) != "empty" || check_space(board, board[2][0]) != "empty" || check_space(board, board[3][0]) != "empty"
-				return false if color_checked_after_move(board, color, nil, nil, 'castle left')
+				return false if check_space(board, [1,0]) != "empty" || check_space(board, [2,0]) != "empty" || check_space(board, [3,0]) != "empty"
+				return false if color_checked_after_move?(board, color, nil, nil, 'castle left')
 			else
 				return false if board[7][0].moved == true
-				return false if check_space(board, board[5][0]) != "empty" || check_space(board, board[6][0]) != "empty"
-				return false if color_checked_after_move(board, color, nil, nil, 'castle right')
+				return false if check_space(board, [5,0]) != "empty" || check_space(board, [6,0]) != "empty"
+				return false if color_checked_after_move?(board, color, nil, nil, 'castle right')
 			end
 		else
 			return false if board[4][7].moved == true
 
 			if direction == 'left'
 				return false if board[0][7].moved == true
-				return false if check_space(board, board[1][7]) != "empty" || check_space(board, board[2][7]) != "empty" || check_space(board, board[3][7]) != "empty"
-				return false if color_checked_after_move(board, color, nil, nil, 'castle left')
+				return false if check_space(board, [1,7]) != "empty" || check_space(board, [2,7]) != "empty" || check_space(board, [3,7]) != "empty"
+				return false if color_checked_after_move?(board, color, nil, nil, 'castle left')
 			else
 				return false if board[7][7].moved == true
-				return false if check_space(board, board[5][7]) != "empty" || check_space(board, board[6][7]) != "empty"
-				return false if color_checked_after_move(board, color, nil, nil, 'castle right')
+				return false if check_space(board, [5,7]) != "empty" || check_space(board, [6,7]) != "empty"
+				return false if color_checked_after_move?(board, color, nil, nil, 'castle right')
 			end
 		end
-		castle(board, color, direction)
+		return true
 	end
 
 	# Function that performs a castle movement
@@ -423,23 +429,31 @@ class Board
 			invalid_move = true
 			puts "#{@current_turn.capitalize}'s turn!"
 			while invalid_move == true
-				input = gets.chomp.to_s
+				input = gets.chomp.upcase
 
-				if input == "castle" 
+				if input == "CASTLE" 
 					puts "Please enter a direction to castle (left or right):"
-					direction = gets.chomp until direction == 'left' || direction == 'right'
+					direction = gets.chomp 
+
+					until direction == 'left' || direction == 'right'
+						puts "Please enter a valid direction:"
+						direction = gets.chomp
+					end
+
 					if can_castle?(@chess_board, @current_turn, direction)
 						castle(@chess_board, @current_turn, direction)
 						@last_move = "castle"
+						invalid_move = false
 					else
 						puts "Cannot castle to the #{direction}."
 						puts "Please enter a valid move:"
 						invalid_move = true
 					end
-				elsif input == "en passant"
-					if can_en_passant?
-						en_passant
+				elsif input == "EN PASSANT"
+					if can_en_passant?(@chess_board, @current_turn, @last_move)
+						en_passant(@chess_board, @current_turn, @last_move)
 						@last_move = "en passant"
+						invalid_move = false
 					else
 						puts "Please enter a valid move:"
 						invalid_move = true
@@ -461,18 +475,16 @@ class Board
 						puts "Please enter a valid move:"
 						invalid_move = true
 					else
+						move_piece(@chess_board, @current_turn, origin, destination)
+						@last_move = "#{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1} #{@@LETTER_MAPPING.key(destination[1])}#{destination[0]+1}"
+						if @chess_board[destination[0]][destination[1]].is_a?(Pawn) && (destination[1] == 7 || destination[1] == 0)
+							promotion(@chess_board, destination)
+						end
 						invalid_move = false
 					end
 				end
 			end
 			
-			@chess_board = move_piece(@chess_board, @current_turn, origin, destination)
-			@last_move = "#{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1} #{@@LETTER_MAPPING.key(destination[1])}#{destination[0]+1}"
-
-			if @chess_board[destination[0]][destination[1]].class.to_s == "Pawn" && (destination[1] == 7 || destination[1] == 0)
-				promotion(@chess_board, destination)
-			end
-
 			@current_turn = @current_turn == 'white' ? 'black' : 'white'
 			system "clear" or system "cls"
 			display_board
