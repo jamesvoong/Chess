@@ -288,23 +288,22 @@ class Board
 	end
 
 	# Function that receives a board state and returns true if an en passant move can be made
-	def can_en_passant?(board, color, last_move)
+	def can_en_passant?(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]
+		direction_index = direction == 'left' ? -1 : 1
 
 		if color == 'white'
 			# If last move was a two step move by an opposing pawn
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 6 && prev_destination[1] == 4
 				#If the user has a pawn in position to do en passant, checks both sides
-				return true if board[prev_destination[0]-1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]-1][prev_destination[1]].color == color
-				return true if board[prev_destination[0]+1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+1][prev_destination[1]].color == color
+				return true if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
 			end
 		else
 			# If last move was a two step move by an opposing pawn
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 1 && prev_destination[1] == 3
 				#If the user has a pawn in position to do en passant, checks both sides
-				return true if board[prev_destination[0]-1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]-1][prev_destination[1]].color == color
-				return true if board[prev_destination[0]+1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+1][prev_destination[1]].color == color
+				return true if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
 			end		
 		end
 
@@ -312,31 +311,23 @@ class Board
 	end
 
 	# Function to perform an en passant move to the chess board
-	def en_passant(board, color, last_move)
+	def en_passant(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]	
 
-		left_pawn = true if board[prev_destination[0]-1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]-1][prev_destination[1]].color == color
-		right_pawn = true if board[prev_destination[0]+1][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+1][prev_destination[1]].color == color
-		choice = nil
-		direction = color == 'white' ? 1 : -1
+		direction_index = color == 'white' ? 1 : -1
 
-		if left_pawn && right_pawn
-			puts "Please type 'left' or 'right' to perform en_passant with the Pawn to the left or right of the opposing piece:"
-			choice = gets.chomp
-			until choice == 'left' || choice == 'right'
-				puts "Please enter a valid choice:"
-				choice = gets.chomp
-			end
-		elsif (left_pawn && !right_pawn) || choice == 'left'
-			move_piece(board, color, [prev_destination[0]-1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction]) 
+		if direction == 'left'
+			move_piece(board, color, [prev_destination[0]-1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction_index]) 
 			board[prev_destination[0]][prev_destination[1]] = nil
-		elsif (!left_pawn && right_pawn) || choice == 'right'
-			move_piece(board, color, [prev_destination[0]+1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction]) 
+		else
+			move_piece(board, color, [prev_destination[0]+1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction_index]) 
 			board[prev_destination[0]][prev_destination[1]] = nil
 		end
 	end
 
+	def undo_en_passant(board, color, last_move, direction)
+	end
 	# Function that checks a castling move is available for the argument color and direction 
 	def can_castle?(board, color, direction)
 		return false if check?(board, color)
@@ -449,15 +440,35 @@ class Board
 						puts "Please enter a valid move:"
 						invalid_move = true
 					end
+
 				elsif input == "EN PASSANT"
-					if can_en_passant?(@chess_board, @current_turn, @last_move)
-						en_passant(@chess_board, @current_turn, @last_move)
+					left_passant = can_en_passant?(@chess_board, @current_turn, @last_move, "left")
+					right_passant = can_en_passant?(@chess_board, @current_turn, @last_move, "right")
+
+					if left_passant && right_passant
+						puts "Please type 'left' or 'right' for the pawn you would like to en passant with."
+						passant_direction = gets.chomp.downcase
+
+						until passant_direction == 'left' || passant_direction == 'right'
+							puts "Invalid direction. Please choose left or right."
+							passant_direction = gets.chomp
+						end
+
+						en_passant(@chess_board, @current_turn, @last_move, passant_direction)
 						@last_move = "en passant"
-						invalid_move = false
+						invalid_move = false						
+					elsif left_passant
+						en_passant(@chess_board, @current_turn, @last_move, 'left')
+						@last_move = "en passant"
+						invalid_move = false						
+					elsif right_passant
+						en_passant(@chess_board, @current_turn, @last_move, 'right')
+						@last_move = "en passant"
+						invalid_move = false						
 					else
-						puts "Please enter a valid move:"
-						invalid_move = true
+						puts "Cannot perform en passant, please enter a different move"
 					end
+
 				else
 					origin = [(input[1].to_i)-1, @@LETTER_MAPPING[input[0]]]
 					destination = [(input[4].to_i)-1, @@LETTER_MAPPING[input[3]]]
