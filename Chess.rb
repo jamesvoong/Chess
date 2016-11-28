@@ -220,6 +220,14 @@ class Board
 			end
 		end
 
+		if can_en_passant?(board, color, @last_move, 'left')
+			return false if !color_checked_after_move?(board, color, nil, nil, "en passant left")
+		end
+
+		if can_en_passant?(board, color, @last_move, 'right')
+			return false if !color_checked_after_move?(board, color, nil, nil, "en passant right")
+		end
+
 		return true
 	end
 
@@ -242,8 +250,16 @@ class Board
 			checked = check?(board, color)
 			uncastle(board, color, 'left')
 			return checked			
-		when 'en passant'
-			return false
+		when 'en passant left'
+			en_passant(board, color, @last_move, 'left')
+			checked = check?(board, color)
+			undo_en_passant(board, color, @last_move, 'left')
+			return checked	
+		when 'en passant right'
+			en_passant(board, color, @last_move, 'left')
+			checked = check?(board, color)
+			undo_en_passant(board, color, @last_move, 'left')
+			return checked				
 		else
 			#Temporarily alter the board to check for check
 			origin_content = board[origin[0]][origin[1]]
@@ -327,7 +343,21 @@ class Board
 	end
 
 	def undo_en_passant(board, color, last_move, direction)
+		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
+		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]	
+
+		direction_index = color == 'white' ? 1 : -1
+		opponent_color = color == 'white' ? 'black' : 'white'
+
+		if direction == 'left'
+			move_piece(board, color, [prev_destination[0], prev_destination[1] + direction_index], [prev_destination[0]-1, prev_destination[1]]) 
+			board[prev_destination[0]][prev_destination[1]] = Pawn.new(opponent_color)
+		else
+			move_piece(board, color, [prev_destination[0], prev_destination[1] + direction_index], [prev_destination[0]+1, prev_destination[1]]) 
+			board[prev_destination[0]][prev_destination[1]] = Pawn.new(opponent_color)
+		end
 	end
+
 	# Function that checks a castling move is available for the argument color and direction 
 	def can_castle?(board, color, direction)
 		return false if check?(board, color)
