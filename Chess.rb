@@ -330,6 +330,7 @@ class Board
 		return false
 	end
 
+	#
 	# Function to perform an en passant move to the chess board
 	def en_passant(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
