@@ -314,7 +314,8 @@ class Board
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 6 && prev_destination[1] == 4
 				#If the user has a pawn in position to do en passant, checks both sides
 				if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
-					return true if !color_checked_after_move(board, color, nil, nil, 'en passant #{direction}')
+					puts "en passant #{direction}"
+					return true if !color_checked_after_move?(board, color, nil, nil, "en passant #{direction}")
 				end
 			end
 		else
@@ -322,7 +323,8 @@ class Board
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 1 && prev_destination[1] == 3
 				#If the user has a pawn in position to do en passant, checks both sides
 				if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
-					return true if !color_checked_after_move(board, color, nil, nil, 'en passant #{direction}')
+						puts "en passant #{direction}"
+					return true if !color_checked_after_move?(board, color, nil, nil, "en passant #{direction}")
 				end
 			end		
 		end
