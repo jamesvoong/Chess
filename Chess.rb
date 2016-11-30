@@ -21,11 +21,10 @@ class Board
 		display_board
 	end
 
-# Create an array of piece objects
+# Create two dimensional array of chess pieces
 	def create_board
 		@current_turn = 'white'
 		@chess_board = Array.new(8) {Array.new()}
-
 
 		@chess_board[0][0], @chess_board[7][0] = Rook.new('white'), Rook.new('white')
 		@chess_board[1][0], @chess_board[6][0] = Knight.new('white'), Knight.new('white')
@@ -77,12 +76,7 @@ class Board
 # Returns true if the position contains King of the argument color, false otherwise
 	def space_contains_king?(board, position, color)
 		return false if board[position[0]][position[1]].nil? 
-		
-		if board[position[0]][position[1]].class.to_s == "King" && board[position[0]][position[1]].color == color
-			return true
-		else
-			return false
-		end
+		board[position[0]][position[1]].is_a?(King) && board[position[0]][position[1]].color == color ? true : false
 	end	
 
 # Returns true if the argument position is not inside the chess board
@@ -90,6 +84,7 @@ class Board
 		return true if !position[0].between?(0,7) || !position[1].between?(0,7)
 	end
 
+# Function that finds the potential moves of a piece
 	def potential_moves(board, position, color)
 		case board[position[0]][position[1]].class.to_s
 		when "King"
@@ -139,6 +134,7 @@ class Board
 		return moves_list	
 	end
 
+# Potential moves of a knight
 	def potential_knight_moves(board, position, color)
 		moves_list = []
 		board[position[0]][position[1]].movements.each do |movement|
@@ -148,6 +144,7 @@ class Board
 		return moves_list		
 	end
 
+# Find potential moves of a Pawn, does not include en passant possibilities
 	def potential_pawn_moves(board, position, color)
 		moves_list = []
 		direction = color == 'white' ? 1 : -1
@@ -175,7 +172,6 @@ class Board
 
 # Receives a chess board state and the color to check for check
 	def check?(board, color)
-		
 		opponent_color = color == 'white' ? 'black' : 'white'
 		@@ROWS.times do |x|
 			@@COLUMNS.times do |y|
@@ -192,16 +188,39 @@ class Board
 				end
 			end
 		end
-
 		return false
 	end
 
-# Returns true if the game is over by checkmate for player of argument color
-	def checkmate?(board, color)		
-		opponent_color = color == 'white' ? 'black' : 'white'
+	def game_over(board, color)
+		return "Checkmate!" if check?(board, color) && can_move?(board, color) == false
+		return "Draw by Stalemate!" if !check?(board, color) && can_move?(board, color) == false
+		return "Draw as there are not enough pieces on the board to end the game." if insufficient_pieces(board)
+		return false
+	end
 
-		# If the player is not in check, they cannot be in checkmate
-		return false if check?(board, color) == false
+	def insufficient_pieces(board)
+		white_pieces = Hash.new(0)
+		black_pieces = Hash.new(0)
+
+		@@ROWS.times do |x|
+			@@COLUMNS.times do |y|
+				if board[x][y].nil? == false
+					return false if board[x][y].class.to_s != "King" && board[x][y].class.to_s != "Bishop" && board[x][y].class.to_s != "Knight"
+					white_pieces[board[x][y].class.to_s] += 1 if board[x][y].color == 'white'
+					black_pieces[board[x][y].class.to_s] += 1 if board[x][y].color == 'black'
+				end
+			end
+		end
+
+		white_insufficient = white_pieces["Bishop"] < 2 && white_pieces["Knight"] == 0 || white_pieces["Bishop"] == 0 ? true : false
+		black_insufficient = black_pieces["Bishop"] < 2 && black_pieces["Knight"] == 0 || black_pieces["Bishop"] == 0 ? true : false
+
+		return white_insufficient || black_insufficient
+	end
+
+# Returns false if the player of argument player has no legal moves
+	def can_move?(board, color)		
+		opponent_color = color == 'white' ? 'black' : 'white'
 
 		# Check all possible moves for color and return false if there is a move that allows them to leave a checked state
 		@@ROWS.times do |x|
@@ -214,23 +233,24 @@ class Board
 
 				if moves_for_review != nil
 					moves_for_review.each do |new_position|
-						return false if !color_checked_after_move?(board, color, [x,y], new_position)
+						return true if !color_checked_after_move?(board, color, [x,y], new_position)
 					end
 				end
 			end
 		end
 
 		if can_en_passant?(board, color, @last_move, 'left')
-			return false if !color_checked_after_move?(board, color, nil, nil, "en passant left")
+			return true if !color_checked_after_move?(board, color, nil, nil, "en passant left")
 		end
 
 		if can_en_passant?(board, color, @last_move, 'right')
-			return false if !color_checked_after_move?(board, color, nil, nil, "en passant right")
+			return true if !color_checked_after_move?(board, color, nil, nil, "en passant right")
 		end
 
-		return true
+		return false
 	end
 
+# Method that moves a chess piece
 	def move_piece(board, color, origin, destination)
 		board[destination[0]][destination[1]] = board[origin[0]][origin[1]]
 		board[origin[0]][origin[1]] = nil
@@ -276,8 +296,8 @@ class Board
 			board[destination[0]][destination[1]] = destination_content
 
 			board[origin[0]][origin[1]].moved = origin_has_moved if origin_content != nil
-			board[destination[0]][destination[1]] = destination_has_moved if destination_content != nil
-			checked ? true : false
+			board[destination[0]][destination[1]].moved = destination_has_moved if destination_content != nil
+			return checked
 		end
 	end
 
@@ -314,7 +334,6 @@ class Board
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 6 && prev_destination[1] == 4
 				#If the user has a pawn in position to do en passant, checks both sides
 				if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
-					puts "en passant #{direction}"
 					return true if !color_checked_after_move?(board, color, nil, nil, "en passant #{direction}")
 				end
 			end
@@ -323,7 +342,6 @@ class Board
 			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 1 && prev_destination[1] == 3
 				#If the user has a pawn in position to do en passant, checks both sides
 				if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
-						puts "en passant #{direction}"
 					return true if !color_checked_after_move?(board, color, nil, nil, "en passant #{direction}")
 				end
 			end		
@@ -332,7 +350,6 @@ class Board
 		return false
 	end
 
-	#
 	# Function to perform an en passant move to the chess board
 	def en_passant(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
@@ -365,7 +382,7 @@ class Board
 		end
 	end
 
-	# Function that checks a castling move is available for the argument color and direction 
+	# Function that checks if a castling move is available for the argument color and direction 
 	def can_castle?(board, color, direction)
 		return false if check?(board, color)
 
@@ -449,9 +466,10 @@ class Board
 
 # Function to play the game, ends when checkmate
 	def play		
+		game_end = false
 		puts "Please type a move in the format G1 E1, 'castle' to castle and 'en passant' to perform en passant"
 
-		until checkmate?(@chess_board, @current_turn)
+		until game_end != false
 			puts "Check" if check?(@chess_board, @current_turn)
 				
 			invalid_move = true
@@ -475,7 +493,6 @@ class Board
 					else
 						puts "Cannot castle to the #{direction}."
 						puts "Please enter a valid move:"
-						invalid_move = true
 					end
 
 				elsif input == "EN PASSANT"
@@ -513,15 +530,12 @@ class Board
 					if valid_piece(origin, @current_turn) == false
 						puts "You do not have a piece at #{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1}"
 						puts "Please enter a valid move:"
-						invalid_move = true
 					elsif !potential_moves(@chess_board, [origin[0], origin[1]], @chess_board[origin[0]][origin[1]].color).include?(destination)
 						puts "The #{@chess_board[origin[0]][origin[1]].class} at #{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1} cannot be moved to #{@@LETTER_MAPPING.key(destination[1])}#{destination[0]+1}"
 						puts "Please enter a valid move:"
-						invalid_move = true
 					elsif color_checked_after_move?(@chess_board, @current_turn, origin, destination)
 						puts "This move will leave your king vulnerable."
 						puts "Please enter a valid move:"
-						invalid_move = true
 					else
 						move_piece(@chess_board, @current_turn, origin, destination)
 						@last_move = "#{@@LETTER_MAPPING.key(origin[1])}#{origin[0]+1} #{@@LETTER_MAPPING.key(destination[1])}#{destination[0]+1}"
@@ -537,6 +551,7 @@ class Board
 			system "clear" or system "cls"
 			display_board
 			puts "Last move was: #{@last_move}"
+			game_end = game_over(@chess_board, @current_turn)
 		end
 		winning_player = @current_turn == 'white' ? 'black' : 'white'
 		puts "Checkmate! #{winning_player.capitalize} wins!"
