@@ -2,6 +2,9 @@ require_relative "pieces.rb"
 require "yaml"
 
 class Board
+	attr_accessor :current_turn, :last_move
+	attr_reader :chess_board
+
 	@@ROWS = 8
 	@@COLUMNS = 8
 	@@PROMOTION_CHOICES = ["rook", "knight", "bishop", "queen"]
@@ -17,6 +20,10 @@ class Board
 		"H" => 0
   	}
 
+  	def initialize
+  		@chess_board = Array.new(8) {Array.new()}
+  	end
+
 # Creates the board and displays it
 	def new_game
 		create_board
@@ -26,7 +33,6 @@ class Board
 # Create two dimensional array of chess pieces
 	def create_board
 		@current_turn = 'white'
-		@chess_board = Array.new(8) {Array.new()}
 
 		@chess_board[0][0], @chess_board[7][0] = Rook.new('white'), Rook.new('white')
 		@chess_board[1][0], @chess_board[6][0] = Knight.new('white'), Knight.new('white')
@@ -83,7 +89,7 @@ class Board
 
 # Returns true if the argument position is not inside the chess board
 	def out_of_bounds?(position)
-		return true if !position[0].between?(0,7) || !position[1].between?(0,7)
+		return !position[0].between?(0,7) || !position[1].between?(0,7)
 	end
 
 # Function that finds the potential moves of a piece
@@ -592,4 +598,10 @@ class Board
     	@current_turn = data[:current_turn] 
     	@last_move = data[:last_move]
     end
+
+# Piece creation for testing
+	def create_piece(piece_type, x, y, color, has_moved)
+		@chess_board[x][y] = Kernel.const_get(piece_type).new(color)
+		@chess_board[x][y].moved = has_moved
+	end
 end
