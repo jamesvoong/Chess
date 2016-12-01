@@ -1,4 +1,4 @@
-require_relative "Pieces.rb"
+require_relative "pieces.rb"
 require "yaml"
 
 class Board

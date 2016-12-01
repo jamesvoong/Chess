@@ -1,4 +1,4 @@
-require_relative "Board"
+require_relative "board"
 
 system "clear" or system "cls"
 puts "Welcome to Chess.rb!"
