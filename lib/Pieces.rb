@@ -5,8 +5,6 @@ class Piece
 		@color = color
 		@moved = false
 	end
-
-
 end
 
 class King < Piece

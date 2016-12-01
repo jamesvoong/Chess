@@ -1,4 +1,5 @@
 require_relative "Pieces.rb"
+require "yaml"
 
 class Board
 	@@ROWS = 8
@@ -16,7 +17,8 @@ class Board
 		"H" => 0
   	}
 
-	def initialize
+# Creates the board and displays it
+	def new_game
 		create_board
 		display_board
 	end
@@ -100,7 +102,7 @@ class Board
 		end
 	end
 
-# Functions that return an array of possible moves given a certain position
+# Functions that return an array of possible moves given a certain position and the pieces on the board
 
 # Returns potential moves of the king
 	def potential_king_moves(board, position, color)
@@ -191,13 +193,19 @@ class Board
 		return false
 	end
 
+# Checks for checkmate, stalemate and insufficient piece scenarios
 	def game_over(board, color)
-		return "Checkmate!" if check?(board, color) && can_move?(board, color) == false
+		return "Checkmate! #{color.capitalize} wins!" if check?(board, color) && can_move?(board, color) == false
 		return "Draw by Stalemate!" if !check?(board, color) && can_move?(board, color) == false
 		return "Draw as there are not enough pieces on the board to end the game." if insufficient_pieces(board)
 		return false
 	end
 
+# Checks if both players have either
+# 1) Only Kings
+# 2) One bishop and a king
+# 3) One knight and a king
+# 4) Two knights and a king
 	def insufficient_pieces(board)
 		white_pieces = Hash.new(0)
 		black_pieces = Hash.new(0)
@@ -323,7 +331,7 @@ class Board
 		end
 	end
 
-	# Function that receives a board state and returns true if an en passant move can be made
+# Function that receives a board state and returns true if an en passant move can be made
 	def can_en_passant?(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]
@@ -350,7 +358,7 @@ class Board
 		return false
 	end
 
-	# Function to perform an en passant move to the chess board
+# Function to perform an en passant move to the chess board
 	def en_passant(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]	
@@ -366,6 +374,7 @@ class Board
 		end
 	end
 
+# Function to return the chess board to the state before an en passant move
 	def undo_en_passant(board, color, last_move, direction)
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]	
@@ -382,7 +391,7 @@ class Board
 		end
 	end
 
-	# Function that checks if a castling move is available for the argument color and direction 
+# Function that checks if a castling move is available for the argument color and direction 
 	def can_castle?(board, color, direction)
 		return false if check?(board, color)
 
@@ -414,7 +423,7 @@ class Board
 		return true
 	end
 
-	# Function that performs a castle movement
+# Function that performs a castle movement
 	def castle(board, color, direction)
 		if color == 'white'
 			if direction == 'left'
@@ -435,7 +444,7 @@ class Board
 		end
 	end
 
-	# Function that undoes a castle movement
+# Function that undoes a castle movement
 	def uncastle(board, color, direction)
 		if color == 'white'
 			if direction == 'left'
@@ -464,10 +473,10 @@ class Board
 		end
 	end
 
-# Function to play the game, ends when checkmate
+# Function to play the game, ends when checkmate, stalemate, or when there are not enough pieces to checkmate
 	def play		
 		game_end = false
-		puts "Please type a move in the format G1 E1, 'castle' to castle and 'en passant' to perform en passant"
+		puts "Please type a move in the format G1 E1, 'castle' to castle, 'en passant' to perform en passant and 'save' to save to a savefile"
 
 		until game_end != false
 			puts "Check" if check?(@chess_board, @current_turn)
@@ -523,6 +532,11 @@ class Board
 						puts "Cannot perform en passant, please enter a different move"
 					end
 
+				elsif input == "SAVE"
+					save
+					puts "The game has been saved"
+					puts "#{@current_turn.capitalize}'s turn!"
+
 				else
 					origin = [(input[1].to_i)-1, @@LETTER_MAPPING[input[0]]]
 					destination = [(input[4].to_i)-1, @@LETTER_MAPPING[input[3]]]
@@ -554,9 +568,28 @@ class Board
 			game_end = game_over(@chess_board, @current_turn)
 		end
 		winning_player = @current_turn == 'white' ? 'black' : 'white'
-		puts "Checkmate! #{winning_player.capitalize} wins!"
+		puts game_end
 	end
-end
 
-ChessTestBoard = Board.new
-ChessTestBoard.play
+# Saves state of the game to a yaml file
+	def save
+	    savefile = YAML.dump ({
+	    	:chess_board => @chess_board,
+	    	:current_turn => @current_turn,
+	    	:last_move => @last_move
+	    })
+
+		File.open("savefile.yaml", "w") do |file|
+			file.write(savefile)
+		end    
+	end
+
+# Loads state of game from yaml file
+    def load(text_name)
+		file = File.read(text_name) 	
+    	data = YAML.load file
+    	@chess_board = data[:chess_board]
+    	@current_turn = data[:current_turn] 
+    	@last_move = data[:last_move]
+    end
+end
