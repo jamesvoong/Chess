@@ -201,7 +201,8 @@ class Board
 
 # Checks for checkmate, stalemate and insufficient piece scenarios
 	def game_over(board, color)
-		return "Checkmate! #{color.capitalize} wins!" if check?(board, color) && can_move?(board, color) == false
+		opponent_color = color == 'white' ? 'black' : 'white'
+		return "Checkmate! #{opponent_color.capitalize} wins!" if check?(board, color) && can_move?(board, color) == false
 		return "Draw by Stalemate!" if !check?(board, color) && can_move?(board, color) == false
 		return "Draw as there are not enough pieces on the board to end the game." if insufficient_pieces(board)
 		return false
@@ -229,7 +230,7 @@ class Board
 		white_insufficient = white_pieces["Bishop"] < 2 && white_pieces["Knight"] == 0 || white_pieces["Bishop"] == 0 ? true : false
 		black_insufficient = black_pieces["Bishop"] < 2 && black_pieces["Knight"] == 0 || black_pieces["Bishop"] == 0 ? true : false
 
-		return white_insufficient || black_insufficient
+		return white_insufficient && black_insufficient
 	end
 
 # Returns false if the player of argument player has no legal moves
@@ -290,9 +291,9 @@ class Board
 			undo_en_passant(board, color, @last_move, 'left')
 			return checked	
 		when 'en passant right'
-			en_passant(board, color, @last_move, 'left')
+			en_passant(board, color, @last_move, 'right')
 			checked = check?(board, color)
-			undo_en_passant(board, color, @last_move, 'left')
+			undo_en_passant(board, color, @last_move, 'right')
 			return checked				
 		else
 			#Temporarily alter the board to check for check
@@ -339,13 +340,15 @@ class Board
 
 # Function that receives a board state and returns true if an en passant move can be made
 	def can_en_passant?(board, color, last_move, direction)
+
+
 		prev_origin = [(last_move[1].to_i)-1, @@LETTER_MAPPING[last_move[0]]]
 		prev_destination = [(last_move[4].to_i)-1, @@LETTER_MAPPING[last_move[3]]]
-		direction_index = direction == 'left' ? -1 : 1
+		direction_index = direction == 'left' ? 1 : -1
 
 		if color == 'white'
 			# If last move was a two step move by an opposing pawn
-			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 6 && prev_destination[1] == 4
+			if board[prev_destination[0]][prev_destination[1]].is_a?(Pawn) && prev_origin[1] == 6 && prev_destination[1] == 4
 				#If the user has a pawn in position to do en passant, checks both sides
 				if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
 					return true if !color_checked_after_move?(board, color, nil, nil, "en passant #{direction}")
@@ -353,7 +356,7 @@ class Board
 			end
 		else
 			# If last move was a two step move by an opposing pawn
-			if board[prev_destination[0]][prev_destination[1]].class.to_s == "Pawn" && prev_origin[1] == 1 && prev_destination[1] == 3
+			if board[prev_destination[0]][prev_destination[1]].is_a?(Pawn) && prev_origin[1] == 1 && prev_destination[1] == 3
 				#If the user has a pawn in position to do en passant, checks both sides
 				if board[prev_destination[0]+direction_index][prev_destination[1]].is_a?(Pawn) && board[prev_destination[0]+direction_index][prev_destination[1]].color == color
 					return true if !color_checked_after_move?(board, color, nil, nil, "en passant #{direction}")
@@ -372,10 +375,10 @@ class Board
 		direction_index = color == 'white' ? 1 : -1
 
 		if direction == 'left'
-			move_piece(board, color, [prev_destination[0]-1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction_index]) 
+			move_piece(board, color, [prev_destination[0]+1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction_index]) 
 			board[prev_destination[0]][prev_destination[1]] = nil
 		else
-			move_piece(board, color, [prev_destination[0]+1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction_index]) 
+			move_piece(board, color, [prev_destination[0]-1, prev_destination[1]], [prev_destination[0], prev_destination[1] + direction_index]) 
 			board[prev_destination[0]][prev_destination[1]] = nil
 		end
 	end
@@ -389,10 +392,10 @@ class Board
 		opponent_color = color == 'white' ? 'black' : 'white'
 
 		if direction == 'left'
-			move_piece(board, color, [prev_destination[0], prev_destination[1] + direction_index], [prev_destination[0]-1, prev_destination[1]]) 
+			move_piece(board, color, [prev_destination[0], prev_destination[1] + direction_index], [prev_destination[0]+1, prev_destination[1]]) 
 			board[prev_destination[0]][prev_destination[1]] = Pawn.new(opponent_color)
 		else
-			move_piece(board, color, [prev_destination[0], prev_destination[1] + direction_index], [prev_destination[0]+1, prev_destination[1]]) 
+			move_piece(board, color, [prev_destination[0], prev_destination[1] + direction_index], [prev_destination[0]-1, prev_destination[1]]) 
 			board[prev_destination[0]][prev_destination[1]] = Pawn.new(opponent_color)
 		end
 	end
