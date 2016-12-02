@@ -70,6 +70,136 @@ describe Board do
 	end
 
 	describe "#potential_moves" do
+		context "Rook is surrounded" do
+			before do
+				board.create_piece("Pawn", 0, 1, "white", true)
+				board.create_piece("Rook", 0, 0, "white", true)
+				board.create_piece("Knight", 1, 0, "white", true)
+			end		
+
+			it "returns no moves" do
+				moves_list = board.potential_moves(board.chess_board, [0,0], "white")
+				expect(moves_list).to eq([])
+			end
+		end
+
+		context "Rook has space" do
+			before do
+				board.create_piece("Pawn", 0, 3, "white", true)
+				board.create_piece("Rook", 0, 0, "white", true)
+				board.create_piece("Knight", 3, 0, "white", true)
+			end		
+
+			it "returns a few moves" do
+				moves_list = board.potential_moves(board.chess_board, [0,0], "white")
+				expect(moves_list.include?([0,1])).to be true
+				expect(moves_list.include?([0,2])).to be true
+				expect(moves_list.include?([1,0])).to be true
+				expect(moves_list.include?([2,0])).to be true
+			end
+		end
+
+		context "Bishop can move a diagonal" do
+			before do
+				board.create_piece("Bishop", 0, 0, "white", true)
+				board.create_piece("Rook", 5, 0, "white", true)
+				board.create_piece("Knight", 4, 4, "white", true)
+			end				
+
+			it "returns a few moves" do
+				moves_list = board.potential_moves(board.chess_board, [0,0], "white")
+				expect(moves_list.include?([1,1])).to be true
+				expect(moves_list.include?([2,2])).to be true
+				expect(moves_list.include?([3,3])).to be true
+				expect(moves_list.include?([4,4])).to be false
+			end			
+		end
+
+		context "Knight can move anywhere" do
+			before do
+				board.create_piece("Knight", 4, 4, "white", true)
+			end				
+
+			it "returns a few moves" do
+				moves_list = board.potential_moves(board.chess_board, [4,4], "white")
+				expect(moves_list.include?([5,6])).to be true
+				expect(moves_list.include?([5,2])).to be true
+				expect(moves_list.include?([3,6])).to be true
+				expect(moves_list.include?([3,2])).to be true
+				expect(moves_list.include?([6,5])).to be true
+				expect(moves_list.include?([6,3])).to be true
+				expect(moves_list.include?([2,5])).to be true
+				expect(moves_list.include?([2,3])).to be true
+				expect(moves_list.include?([5,5])).to be false
+				expect(moves_list.include?([5,-8])).to be false
+				expect(moves_list.include?([6,6])).to be false
+				expect(moves_list.include?([-5,-6])).to be false				
+			end				
+		end
+
+		context "Queen has space to move in any direction" do
+			before do
+				board.create_piece("Pawn", 0, 3, "white", true)
+				board.create_piece("Queen", 0, 0, "white", true)
+				board.create_piece("Knight", 3, 0, "white", true)
+				board.create_piece("Knight", 4, 4, "white", true)
+			end		
+
+			it "returns a list of moves" do
+				moves_list = board.potential_moves(board.chess_board, [0,0], "white")
+				expect(moves_list.include?([1,1])).to be true
+				expect(moves_list.include?([2,2])).to be true
+				expect(moves_list.include?([3,3])).to be true					
+				expect(moves_list.include?([0,1])).to be true
+				expect(moves_list.include?([0,2])).to be true
+				expect(moves_list.include?([1,0])).to be true
+				expect(moves_list.include?([2,0])).to be true			
+			end
+		end
+
+		context "King has space to move in any direction" do
+			before do
+				board.create_piece("King", 4, 4, "black", true)
+			end
+
+			it "returns an array of 8 arrays" do
+				moves_list = board.potential_moves(board.chess_board, [4,4], "black")
+				expect(moves_list.include?([4,3])).to be true
+				expect(moves_list.include?([4,5])).to be true
+				expect(moves_list.include?([3,3])).to be true					
+				expect(moves_list.include?([3,4])).to be true
+				expect(moves_list.include?([3,5])).to be true
+				expect(moves_list.include?([5,3])).to be true
+				expect(moves_list.include?([5,4])).to be true
+				expect(moves_list.include?([5,5])).to be true	
+			end
+		end
+
+		context "Pawn that has not moved" do
+			before do
+				board.create_piece("Pawn", 0, 6, "black", false)
+			end
+
+			it "returns an array of 2 arrays" do
+				moves_list = board.potential_moves(board.chess_board, [0,6], "black")
+				expect(moves_list.include?([0,5])).to be true
+				expect(moves_list.include?([0,4])).to be true	
+			end			
+		end
+
+		context "Pawn that can take a piece" do
+			before do
+				board.create_piece("Pawn", 0, 6, "black", false)
+				board.create_piece("Pawn", 1, 5, "white", true)
+			end
+
+			it "returns an array of 3 arrays" do
+				moves_list = board.potential_moves(board.chess_board, [0,6], "black")
+				expect(moves_list.include?([0,5])).to be true
+				expect(moves_list.include?([0,4])).to be true
+				expect(moves_list.include?([1,5])).to be true		
+			end				
+		end
 	end		
 
 	describe "#check?" do
@@ -397,12 +527,122 @@ describe Board do
 	end
 
 	describe "#undo_en_passant" do
+		context "Undoes en passant to the right" do
+			before do
+				board.create_piece("Pawn", 4, 4, "white", true)
+				board.create_piece("Pawn", 5, 4, "black", true)
+				board.last_move = "B6 D6"
+				board.en_passant(board.chess_board, "white", board.last_move, 'right')
+				board.undo_en_passant(board.chess_board, "white", board.last_move, 'right')
+			end				
+
+			it "returns true" do
+				expect(board.chess_board[4][4].is_a?(Pawn)).to be true
+				expect(board.chess_board[5][4].is_a?(Pawn)).to be true
+			end							
+		end
+
+		context "Undoes en passant to the left" do
+			before do
+				board.create_piece("Pawn", 4, 4, "white", true)
+				board.create_piece("Pawn", 3, 4, "black", true)
+				board.last_move = "B4 D4"
+				board.en_passant(board.chess_board, "white", board.last_move, "left")
+				board.undo_en_passant(board.chess_board, "white", board.last_move, "left")
+			end
+
+			it "returns true" do
+				expect(board.chess_board[4][4].is_a?(Pawn)).to be true
+				expect(board.chess_board[3][4].is_a?(Pawn)).to be true
+			end						
+		end
 	end
 
-	describe "#can_castle" do
+	describe "#can_castle?" do
+		context "King has already moved and moved back" do
+			before do
+				board.create_piece("King", 4, 0, "white", true)
+				board.create_piece("Rook", 0, 0, "white", false)
+			end		
+
+			it "returns false" do
+				expect(board.can_castle?(board.chess_board, 'white', 'left')).to be false
+			end
+		end
+
+		context "Rook has already moved" do
+			before do
+				board.create_piece("King", 4, 0, "white", false)
+				board.create_piece("Rook", 0, 4, "white", true)
+			end		
+
+			it "returns false" do
+				expect(board.can_castle?(board.chess_board, 'white', 'left')).to be false
+			end		
+		end
+
+		context "Castle to the left" do
+			before do
+				board.create_piece("King", 4, 0, "white", false)
+				board.create_piece("Rook", 0, 0, "white", false)
+			end		
+
+			it "returns true" do
+				expect(board.can_castle?(board.chess_board, 'white', 'left')).to be true
+			end				
+		end
+
+		context "Castle to the right" do
+			before do
+				board.create_piece("King", 4, 0, "white", false)
+				board.create_piece("Rook", 7, 0, "white", false)
+			end		
+
+			it "returns true" do
+				expect(board.can_castle?(board.chess_board, 'white', 'right')).to be true
+			end				
+		end
+
+		context "There are pieces between the Rook and King" do
+			before do
+				board.create_piece("King", 4, 0, "white", false)
+				board.create_piece("Knight", 6, 0, "white", true)
+				board.create_piece("Rook", 7, 0, "white", false)
+			end		
+
+			it "returns false" do
+				expect(board.can_castle?(board.chess_board, 'white', 'right')).to be false
+			end					
+		end
+
 	end
 
 	describe "#castle" do
+		context "Castle to the left" do
+			before do
+				board.create_piece("King", 4, 0, "white", false)
+				board.create_piece("Rook", 0, 0, "white", false)
+				board.castle(board.chess_board, 'white', 'left')
+			end		
+
+			it "returns true" do
+				expect(board.chess_board[2][0].is_a?(King)).to be true
+				expect(board.chess_board[3][0].is_a?(Rook)).to be true
+			end				
+		end
+
+		context "Castle to the right" do
+			before do
+				board.create_piece("King", 4, 0, "white", false)
+				board.create_piece("Rook", 7, 0, "white", false)
+				board.castle(board.chess_board, 'white', 'right')
+			end		
+
+			it "returns true" do
+				expect(board.chess_board[6][0].is_a?(King)).to be true
+				expect(board.chess_board[5][0].is_a?(Rook)).to be true
+			end				
+		end
 	end
 
 end

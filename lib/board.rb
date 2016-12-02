@@ -404,27 +404,29 @@ class Board
 	def can_castle?(board, color, direction)
 		return false if check?(board, color)
 
+
+
 		if color == 'white'
-			return false if board[4][0].moved == true
+			return false if board[4][0].nil? || board[4][0].moved == true
 
 			if direction == 'left'
-				return false if board[0][0].moved == true
+				return false if board[0][0].nil? || board[0][0].moved == true
 				return false if check_space(board, [1,0]) != "empty" || check_space(board, [2,0]) != "empty" || check_space(board, [3,0]) != "empty"
 				return false if color_checked_after_move?(board, color, nil, nil, 'castle left')
 			else
-				return false if board[7][0].moved == true
+				return false if board[7][0].nil? || board[7][0].moved == true
 				return false if check_space(board, [5,0]) != "empty" || check_space(board, [6,0]) != "empty"
 				return false if color_checked_after_move?(board, color, nil, nil, 'castle right')
 			end
 		else
-			return false if board[4][7].moved == true
+			return false if board[4][7].nil? || board[4][7].moved == true
 
 			if direction == 'left'
-				return false if board[0][7].moved == true
+				return false if board[0][7].nil? || board[0][7].moved == true
 				return false if check_space(board, [1,7]) != "empty" || check_space(board, [2,7]) != "empty" || check_space(board, [3,7]) != "empty"
 				return false if color_checked_after_move?(board, color, nil, nil, 'castle left')
 			else
-				return false if board[7][7].moved == true
+				return false if board[7][7].nil? || board[7][7].moved == true
 				return false if check_space(board, [5,7]) != "empty" || check_space(board, [6,7]) != "empty"
 				return false if color_checked_after_move?(board, color, nil, nil, 'castle right')
 			end
